@@ -1,14 +1,31 @@
 # Skills
 
-Portable agent skills. `install.sh --skills` symlinks this whole directory to:
+Portable agent skills. `install.sh --skills` symlinks each skill below into:
 
 | Agent       | Path               |
 | ----------- | ------------------ |
 | Claude Code | `~/.claude/skills` |
 | Cursor      | `~/.cursor/skills` |
 
-Because the directory is linked as a unit, `git pull` here updates every agent
-on the machine immediately — no re-run of the installer.
+Skills are linked one at a time, so those directories stay real directories.
+Skills that already exist on a machine keep working, and skills an agent
+creates later are written to local disk rather than into this repo.
+
+That second point is the important one: **this repo is public.** Cursor's
+`create-skill` writes new personal skills to `~/.cursor/skills/`. If that path
+were a symlink to this repo, a skill written on a work machine — internal
+service names, deploy steps, architecture — would land in a public
+repository's working tree, one `git add -A` away from being published.
+
+After pulling a new skill, run `./install.sh --skills` to link it. Re-running
+is safe and also clears links to skills removed from the repo.
+
+## Work machines
+
+Nothing stops you keeping work-specific skills; keep them *out of this repo*.
+Put them straight in `~/.claude/skills/` or `~/.cursor/skills/` as normal
+directories. They sit alongside the linked ones and are never touched by the
+installer.
 
 ## Layout
 

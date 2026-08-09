@@ -44,9 +44,18 @@ anything else in the way is moved to `<file>.bak.<timestamp>` first.
 
 ## Skills
 
-`skills/` is symlinked to both `~/.claude/skills` and `~/.cursor/skills`, so
-a `git pull` here updates every agent on the machine at once. See
-[skills/README.md](skills/README.md) for the format.
+Each skill in `skills/` is symlinked individually into `~/.claude/skills` and
+`~/.cursor/skills`. See [skills/README.md](skills/README.md) for the format.
+
+Linking them one by one, rather than linking `skills/` as a whole directory,
+keeps the agent's skills folder a real directory. Skills already on the
+machine keep working, and any skill an agent creates later lands on local disk
+instead of inside this repo — which matters because **this repo is public**
+and it is cloned onto machines where new skills may be work-specific.
+
+The trade-off: after a `git pull` brings in a new skill, run
+`./install.sh --skills` again to link it. The step is idempotent, and it also
+clears links to skills that have been removed from the repo.
 
 ## Terminal.app
 

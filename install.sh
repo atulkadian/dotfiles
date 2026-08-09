@@ -63,9 +63,19 @@ back_up() {
     run mv "$target" "$target.bak.$STAMP"
 }
 
-# link <source> <target>
+# link <source> <target> [fresh]
+#
+# `fresh` means the parent directory was just created by this run and is known
+# to be empty, so there is nothing to inspect or back up. Without it, a dry run
+# would report backups for files that only appear to exist because the earlier
+# steps it was reporting on did not actually happen.
 link() {
-    local src="$1" target="$2"
+    local src="$1" target="$2" fresh="${3:-0}"
+    if [ "$fresh" = "1" ]; then
+        run ln -s "$src" "$target"
+        ok "$(tilde "$target") -> $(tilde "$src")"
+        return 0
+    fi
     if [ -L "$target" ] && [ "$(readlink "$target")" = "$src" ]; then
         skip "$(tilde "$target") (already linked)"
         return 0
@@ -172,13 +182,52 @@ export_terminal() {
     save "$(tilde "$out")"
 }
 
-# The whole skills/ directory is linked as one unit, so `git pull` in this repo
-# immediately updates every agent without re-running this script.
+# Each skill is linked individually, rather than linking skills/ as one
+# directory. That keeps the agent's skills directory a real directory, which
+# matters for two reasons:
+#
+#   1. Skills already on the machine keep working, instead of being hidden
+#      behind a symlink to this repo.
+#   2. Skills an agent creates later (Cursor's create-skill writes to
+#      ~/.cursor/skills) land on the local disk, not inside this repo. This
+#      repo is public, so work-specific skills must not be able to drift into
+#      it by accident.
+#
+# The cost is that a `git pull` adding a new skill needs this step re-run to
+# link it.
 install_skills() {
     info "Linking agent skills"
-    local target
+    local target dir existing fresh
     for target in "${SKILL_TARGETS[@]}"; do
-        link "$REPO/skills" "$target"
+        fresh=0
+        # An earlier version of this script linked the directory itself.
+        # Replace that with a real directory; nothing is lost, since the link
+        # only ever pointed back here.
+        if [ -L "$target" ] && [ "$(readlink "$target")" = "$REPO/skills" ]; then
+            warn "replacing directory symlink at $(tilde "$target")"
+            run rm "$target"
+            fresh=1
+        fi
+        [ -d "$target" ] || fresh=1
+        run mkdir -p "$target"
+
+        shopt -s nullglob
+        for dir in "$REPO"/skills/*/; do
+            link "${dir%/}" "$target/$(basename "$dir")" "$fresh"
+        done
+
+        # Drop links to skills that have since been removed from the repo.
+        for existing in "$target"/*; do
+            if [ -L "$existing" ] && [ ! -e "$existing" ]; then
+                case "$(readlink "$existing")" in
+                    "$REPO"/skills/*)
+                        run rm "$existing"
+                        warn "removed stale link $(tilde "$existing")"
+                        ;;
+                esac
+            fi
+        done
+        shopt -u nullglob
     done
 }
 

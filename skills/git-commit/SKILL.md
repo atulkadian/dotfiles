@@ -68,11 +68,22 @@ diff is already in the commit.
 Confirm nothing slipped in:
 
 ```bash
-git log -1 --format='%B' | grep -inE 'co-authored-by|generated with|🤖|claude|cursor|copilot'
+git log -1 --format='%B' | grep -inE 'co-authored-by:|generated with|🤖'
 ```
 
-No output means the message is clean. If it matches, fix the commit before
-pushing:
+No output means the message is clean. These patterns are the attribution
+itself, so any match is a genuine problem.
+
+A tool name in the prose is not: a commit that legitimately describes work on
+`~/.claude/skills` or on Cursor config should say so. Only trailers and
+footers are forbidden, not the words. If you want the wider sweep, read the
+matches rather than treating them as failures:
+
+```bash
+git log -1 --format='%B' | grep -inE 'claude|cursor|copilot'
+```
+
+If the narrow check matches, fix the commit before pushing:
 
 ```bash
 git commit --amend
@@ -81,7 +92,7 @@ git commit --amend
 To check a range you are about to push:
 
 ```bash
-git log origin/HEAD..HEAD --format='%B' | grep -inE 'co-authored-by|generated with|🤖'
+git log origin/HEAD..HEAD --format='%B' | grep -inE 'co-authored-by:|generated with|🤖'
 ```
 
 ## Fixing history that already has attribution

@@ -1,0 +1,10 @@
+.DS_Store
+
+# Machine-specific config, sourced/included by the tracked files but never
+# committed. See README.
+*.local
+*.bak
+*.bak.*
+
+# Per-machine agent permission grants, not shared config
+.claude/settings.local.json

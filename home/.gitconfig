@@ -1,0 +1,17 @@
+[user]
+	name = Atul Kadian
+	email = atul2143143@gmail.com
+
+[core]
+	editor = nano
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
+
+# Machine-specific config: work identities, conditional includes, credential
+# helpers. Not committed. Create ~/.gitconfig.local by hand on each machine.
+[include]
+	path = ~/.gitconfig.local

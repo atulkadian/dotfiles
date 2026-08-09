@@ -6,6 +6,7 @@
 #   ./install.sh                 # everything
 #   ./install.sh --skills        # just the agent skills
 #   ./install.sh --dry-run       # print what would happen, change nothing
+#   ./install.sh --export-terminal   # pull live Terminal.app settings into the repo
 #
 set -euo pipefail
 
@@ -16,6 +17,12 @@ DRY_RUN=0
 do_dotfiles=0
 do_brew=0
 do_skills=0
+do_terminal=0
+do_export=0
+
+# Terminal.app profile to make the default. Must match the `name` key inside
+# one of the .terminal files in macOS/terminal/.
+TERMINAL_PROFILE="Clear Dark"
 
 # Where agent skills get linked. Both tools read SKILL.md the same way, so a
 # single skills/ directory serves both.
@@ -30,6 +37,7 @@ info() { printf '\033[0;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[0;33m warn\033[0m %s\n' "$*"; }
 skip() { printf '\033[0;90m skip\033[0m %s\n' "$*"; }
 ok()   { printf '\033[0;32m link\033[0m %s\n' "$*"; }
+save() { printf '\033[0;32m save\033[0m %s\n' "$*"; }
 
 run() {
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -100,6 +108,70 @@ install_brew() {
     run brew bundle install --file="$REPO/macOS/Brewfile"
 }
 
+# Terminal.app keeps its profiles inside a preferences domain rather than a
+# file we can symlink, so these are imported rather than linked. Re-export
+# after changing settings in the UI:
+#
+#   ./install.sh --export-terminal
+#
+install_terminal() {
+    info "Terminal.app profiles"
+    local file profile
+    shopt -s nullglob
+    for file in "$REPO"/macOS/terminal/*.terminal; do
+        profile="$(plutil -extract name raw -o - "$file")"
+        if profile_installed "$profile"; then
+            skip "profile \"$profile\" already installed"
+            continue
+        fi
+        # Terminal.app is asked to import the file itself, instead of writing
+        # the profile with `defaults`. A running Terminal holds its
+        # preferences in memory and rewrites the whole domain when it quits,
+        # which would silently discard anything written underneath it.
+        # Importing through the app puts the profile in that in-memory copy.
+        run open -a Terminal "$file"
+        ok "imported profile \"$profile\""
+    done
+    shopt -u nullglob
+
+    if profile_installed "$TERMINAL_PROFILE"; then
+        run defaults write com.apple.Terminal "Default Window Settings" -string "$TERMINAL_PROFILE"
+        run defaults write com.apple.Terminal "Startup Window Settings" -string "$TERMINAL_PROFILE"
+        ok "default profile set to \"$TERMINAL_PROFILE\""
+        if pgrep -xq Terminal; then
+            warn "Terminal is running: quit and reopen it for this to stick."
+            warn "If it does not, set \"$TERMINAL_PROFILE\" as Default in"
+            warn "Terminal > Settings > Profiles (the profile is imported either way)."
+        fi
+    else
+        warn "profile \"$TERMINAL_PROFILE\" not found; leaving the default alone"
+    fi
+}
+
+profile_installed() {
+    defaults export com.apple.Terminal - \
+        | plutil -extract "Window Settings.$1.name" raw -o - - >/dev/null 2>&1
+}
+
+# Copy the live Terminal.app profile back into the repo, so settings changed
+# in the UI can be committed.
+export_terminal() {
+    info "Exporting Terminal.app profile \"$TERMINAL_PROFILE\""
+    local out
+    out="$REPO/macOS/terminal/$(echo "$TERMINAL_PROFILE" | tr '[:upper:] ' '[:lower:]-').terminal"
+    if ! profile_installed "$TERMINAL_PROFILE"; then
+        warn "profile \"$TERMINAL_PROFILE\" is not defined in Terminal.app"
+        return 1
+    fi
+    if [ "$DRY_RUN" -eq 1 ]; then
+        printf '\033[0;90m  would write: %s\033[0m\n' "$(tilde "$out")"
+        return 0
+    fi
+    defaults export com.apple.Terminal - \
+        | plutil -extract "Window Settings.$TERMINAL_PROFILE" xml1 -o "$out" -
+    save "$(tilde "$out")"
+}
+
 # The whole skills/ directory is linked as one unit, so `git pull` in this repo
 # immediately updates every agent without re-running this script.
 install_skills() {
@@ -117,10 +189,12 @@ while [ $# -gt 0 ]; do
         --dotfiles) do_dotfiles=1 ;;
         --brew)     do_brew=1 ;;
         --skills)   do_skills=1 ;;
-        --all)      do_dotfiles=1; do_brew=1; do_skills=1 ;;
+        --terminal) do_terminal=1 ;;
+        --all)      do_dotfiles=1; do_brew=1; do_skills=1; do_terminal=1 ;;
         --dry-run)  DRY_RUN=1 ;;
+        --export-terminal) do_export=1 ;;
         -h|--help)
-            sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's|^#\{1\} \{0,1\}||'
+            sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's|^#\{1\} \{0,1\}||'
             exit 0
             ;;
         *)
@@ -131,19 +205,27 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+if [ "$DRY_RUN" -eq 1 ]; then
+    info "Dry run: nothing will be changed"
+fi
+
+# Exporting is the reverse of installing, so it runs on its own.
+if [ "$do_export" -eq 1 ]; then
+    export_terminal
+    exit 0
+fi
+
 # No step flags means do everything.
-if [ $((do_dotfiles + do_brew + do_skills)) -eq 0 ]; then
+if [ $((do_dotfiles + do_brew + do_skills + do_terminal)) -eq 0 ]; then
     do_dotfiles=1
     do_brew=1
     do_skills=1
-fi
-
-if [ "$DRY_RUN" -eq 1 ]; then
-    info "Dry run: nothing will be changed"
+    do_terminal=1
 fi
 
 if [ "$do_dotfiles" -eq 1 ]; then install_dotfiles; fi
 if [ "$do_brew" -eq 1 ]; then install_brew; fi
 if [ "$do_skills" -eq 1 ]; then install_skills; fi
+if [ "$do_terminal" -eq 1 ]; then install_terminal; fi
 
 info "Done"

@@ -36,22 +36,43 @@ Match what the repository already does. Read it first:
 git log --format='%s' -20
 ```
 
-Follow the dominant pattern you see — prefix style, capitalization,
-imperative vs past tense. A repo's existing convention always wins over any
-default you would otherwise reach for, including Conventional Commits.
+Follow the dominant pattern you see: prefix style, capitalization, imperative
+vs past tense. A repo's existing convention wins over any default you would
+otherwise reach for.
 
-If the repo has no established convention, use:
+**Always use a prefix, unless the repo's own history has none.** A bare
+summary is correct only when you have looked at `git log` and found that the
+existing commits are bare too. Mixed or unclear history is not a reason to
+drop the prefix; fall back to the default below.
+
+Default when the repo has no convention of its own, or the history is too
+mixed to read one:
 
 ```
 type: short summary in the imperative
 
 Optional body explaining why the change was made, wrapped at 72
-characters. Describe the reason, not a restatement of the diff — the
+characters. Describe the reason, not a restatement of the diff. The
 diff is already in the commit.
 ```
 
+Types are Conventional Commits:
+
+| Type | For |
+| ---- | --- |
+| `feat` | a new capability for the user |
+| `fix` | a bug fix |
+| `docs` | documentation only |
+| `refactor` | behaviour unchanged, structure changed |
+| `perf` | a performance change |
+| `test` | tests only |
+| `build` | build system, dependencies, packaging |
+| `ci` | CI config and pipelines |
+| `chore` | anything else with no product effect |
+
 - Subject under ~50 characters, lowercase, no trailing period
-- Common types: `add`, `fix`, `update`, `remove`, `refactor`, `docs`, `chore`
+- A scope is optional: `fix(auth): ...`. Skip it when it adds nothing.
+- Append `!` for a breaking change: `feat!: drop Node 18`
 - Body only when the *why* isn't obvious; skip it for trivial changes
 
 ## Before committing

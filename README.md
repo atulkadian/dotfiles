@@ -43,8 +43,9 @@ Re-running is safe. Links already pointing here are skipped, and anything else
 in the way moves to `<file>.bak.<timestamp>` first.
 
 Terminal profiles are imported rather than symlinked, because Terminal.app
-keeps them in a preferences domain instead of a file. Quit and reopen Terminal
-if a new window still shows the old profile.
+keeps them in a preferences domain instead of a file. Updating a profile that
+already exists means overwriting that domain, so **quit Terminal first** or
+the step will tell you to and skip. A fresh import works either way.
 
 ## Skills
 

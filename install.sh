@@ -131,7 +131,21 @@ install_terminal() {
     for file in "$REPO"/macOS/terminal/*.terminal; do
         profile="$(plutil -extract name raw -o - "$file")"
         if profile_installed "$profile"; then
-            skip "profile \"$profile\" already installed"
+            if profile_matches "$profile" "$file"; then
+                skip "profile \"$profile\" already matches"
+                continue
+            fi
+            # The profile exists under this name but its settings have moved
+            # on in the repo. Overwrite it in place; `open` would not, since
+            # Terminal treats an existing name as nothing to import.
+            if pgrep -xq Terminal; then
+                warn "profile \"$profile\" differs from the repo, but Terminal is running."
+                warn "Quit Terminal and run this again to update it."
+                continue
+            fi
+            run defaults write com.apple.Terminal "Window Settings" \
+                -dict-add "$profile" "$(cat "$file")"
+            ok "updated profile \"$profile\""
             continue
         fi
         # Terminal.app is asked to import the file itself, instead of writing
@@ -161,6 +175,22 @@ install_terminal() {
 profile_installed() {
     defaults export com.apple.Terminal - \
         | plutil -extract "Window Settings.$1.name" raw -o - - >/dev/null 2>&1
+}
+
+# True when the profile stored in Terminal.app is identical to the file.
+# Checking the name alone would leave an out-of-date profile in place forever.
+profile_matches() {
+    local tmp status
+    tmp="$(mktemp)"
+    if defaults export com.apple.Terminal - \
+        | plutil -extract "Window Settings.$1" xml1 -o "$tmp" - 2>/dev/null \
+        && diff -q "$tmp" "$2" >/dev/null 2>&1; then
+        status=0
+    else
+        status=1
+    fi
+    rm -f "$tmp"
+    return "$status"
 }
 
 # Copy the live Terminal.app profile back into the repo, so settings changed

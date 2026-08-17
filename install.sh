@@ -93,6 +93,7 @@ link() {
 # linked one by one rather than linking whole directories, which would shadow
 # directories that other tools own — ~/.oh-my-zsh being the obvious one.
 install_dotfiles() {
+    install_oh_my_zsh
     info "Linking dotfiles"
     local rel
     while IFS= read -r rel; do
@@ -100,17 +101,45 @@ install_dotfiles() {
     done < <(cd "$REPO/home" && find . -type f ! -name '.DS_Store' | sed 's|^\./||')
 }
 
+# oh-my-zsh is not a Homebrew package, and home/.zshrc is inert without it:
+# the file sources $ZSH/oh-my-zsh.sh and names a theme that lives under
+# ~/.oh-my-zsh/custom/themes. Install it before linking anything.
+#
+# KEEP_ZSHRC stops the installer replacing the .zshrc this repo provides.
+# --unattended stops it launching a new shell and changing the login shell.
+install_oh_my_zsh() {
+    info "oh-my-zsh"
+    if [ -d "$HOME/.oh-my-zsh" ]; then
+        skip "already installed"
+        return 0
+    fi
+    warn "not found, installing"
+    if [ "$DRY_RUN" -eq 1 ]; then
+        printf '\033[0;90m  would install oh-my-zsh\033[0m\n'
+        return 0
+    fi
+    env KEEP_ZSHRC=yes sh -c \
+        "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+        "" --unattended
+}
+
 install_brew() {
     info "Homebrew"
     if ! command -v brew >/dev/null 2>&1; then
         warn "Homebrew not found, installing"
-        run /bin/bash -c \
-            "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        # A fresh install is not on PATH yet in this shell.
-        if [ -x /opt/homebrew/bin/brew ]; then
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        elif [ -x /usr/local/bin/brew ]; then
-            eval "$(/usr/local/bin/brew shellenv)"
+        if [ "$DRY_RUN" -eq 1 ]; then
+            printf '\033[0;90m  would install Homebrew\033[0m\n'
+        else
+            # Kept out of run(), because the command substitution would fetch
+            # and print the whole installer during a dry run.
+            /bin/bash -c \
+                "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            # A fresh install is not on PATH yet in this shell.
+            if [ -x /opt/homebrew/bin/brew ]; then
+                eval "$(/opt/homebrew/bin/brew shellenv)"
+            elif [ -x /usr/local/bin/brew ]; then
+                eval "$(/usr/local/bin/brew shellenv)"
+            fi
         fi
     else
         skip "Homebrew already installed"

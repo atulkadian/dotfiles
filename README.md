@@ -32,7 +32,7 @@ relative to `home/` is its path relative to `$HOME`.
 | Flag | Does |
 | ---- | ---- |
 | *(none)* or `--all` | all four steps below |
-| `--dotfiles` | link `home/` into `$HOME` |
+| `--dotfiles` | install oh-my-zsh if missing, then link `home/` into `$HOME` |
 | `--brew` | install Homebrew, then the Brewfile |
 | `--skills` | link each skill into Claude Code and Cursor |
 | `--terminal` | import the Terminal.app profile and make it the default |

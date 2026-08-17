@@ -35,7 +35,7 @@ relative to `home/` is its path relative to `$HOME`.
 | `--dotfiles` | install oh-my-zsh if missing, then link `home/` into `$HOME` |
 | `--brew` | install Homebrew, then the Brewfile |
 | `--skills` | link each skill into Claude Code and Cursor |
-| `--terminal` | import the Terminal.app profile and make it the default |
+| `--terminal` | the whole terminal look: Terminal.app profile, plus the oh-my-zsh theme |
 | `--export-terminal` | copy live Terminal.app settings back into the repo |
 | `--dry-run` | print what would happen, change nothing |
 

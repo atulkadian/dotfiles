@@ -24,6 +24,12 @@ do_export=0
 # one of the .terminal files in macOS/terminal/.
 TERMINAL_PROFILE="Clear Dark"
 
+# The prompt half of the terminal look. The file also sits under home/, so
+# --dotfiles links it as well; --terminal relinks it so the whole look can be
+# restored without touching the rest of the dotfiles.
+ZSH_THEME_NAME="derpBox"
+ZSH_THEME_FILE=".oh-my-zsh/custom/themes/$ZSH_THEME_NAME.zsh-theme"
+
 # Where agent skills get linked. Both tools read SKILL.md the same way, so a
 # single skills/ directory serves both.
 SKILL_TARGETS=(
@@ -198,6 +204,28 @@ install_terminal() {
         fi
     else
         warn "profile \"$TERMINAL_PROFILE\" not found; leaving the default alone"
+    fi
+
+    install_zsh_theme
+}
+
+# Links the theme file only. Installing oh-my-zsh belongs to --dotfiles, so
+# this step reports the missing dependency instead of creating a directory
+# tree that nothing would read.
+install_zsh_theme() {
+    info "oh-my-zsh theme"
+    if [ ! -d "$HOME/.oh-my-zsh" ]; then
+        warn "oh-my-zsh is not installed, so the theme has nowhere to load from"
+        warn "Run ./install.sh --dotfiles to install it."
+        return 0
+    fi
+    link "$REPO/home/$ZSH_THEME_FILE" "$HOME/$ZSH_THEME_FILE"
+
+    # The theme file is inert unless .zshrc selects it by name.
+    if ! grep -q "^ZSH_THEME=\"$ZSH_THEME_NAME\"" "$HOME/.zshrc" 2>/dev/null; then
+        warn "~/.zshrc does not select the $ZSH_THEME_NAME theme"
+        warn "Set ZSH_THEME=\"$ZSH_THEME_NAME\" in it, or run --dotfiles to link"
+        warn "the .zshrc from this repo."
     fi
 }
 

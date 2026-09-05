@@ -4,7 +4,7 @@
 # here are left alone, and anything else is backed up before being replaced.
 #
 #   ./install.sh                 # everything
-#   ./install.sh --skills        # just the agent skills
+#   ./install.sh --skills        # just the agent skills and their settings
 #   ./install.sh --dry-run       # print what would happen, change nothing
 #   ./install.sh --export-terminal   # pull live Terminal.app settings into the repo
 #
@@ -36,6 +36,15 @@ SKILL_TARGETS=(
     "$HOME/.claude/skills"
     "$HOME/.cursor/skills"
 )
+
+# Claude Code settings this repo insists on, merged into the live settings file
+# rather than symlinked. Claude Code writes to that file itself — permission
+# rules land there as you approve them — so a link would either push those into
+# this public repo or be replaced outright the first time it wrote.
+#
+# Cursor has no equivalent key, so this applies to Claude Code only.
+CLAUDE_SETTINGS_SRC="$REPO/claude/settings.defaults.json"
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 
 # --- helpers ---------------------------------------------------------------
 
@@ -318,6 +327,70 @@ install_skills() {
     done
 }
 
+# Merge CLAUDE_SETTINGS_SRC into ~/.claude/settings.json. Keys the fragment
+# names win; everything already in the file is left alone.
+#
+# This exists because the git-commit skill forbids AI attribution but a skill is
+# only context — an agent can miss it, and one did. `attribution` is applied by
+# the client whatever the agent decides, so the rule survives being ignored.
+install_agent_settings() {
+    info "Claude Code settings"
+
+    if [ ! -f "$CLAUDE_SETTINGS_SRC" ]; then
+        warn "no fragment at $(tilde "$CLAUDE_SETTINGS_SRC"), nothing to apply"
+        return 0
+    fi
+
+    local merged
+    if ! merged="$(python3 - "$CLAUDE_SETTINGS" "$CLAUDE_SETTINGS_SRC" <<'PY'
+import json, pathlib, sys
+
+target, fragment = (pathlib.Path(arg) for arg in sys.argv[1:3])
+try:
+    current = json.loads(target.read_text()) if target.exists() else {}
+except json.JSONDecodeError:
+    sys.exit(3)
+if not isinstance(current, dict):
+    sys.exit(3)
+
+
+def merge(into, new):
+    for key, value in new.items():
+        if isinstance(value, dict) and isinstance(into.get(key), dict):
+            merge(into[key], value)
+        else:
+            into[key] = value
+    return into
+
+
+print(json.dumps(merge(current, json.loads(fragment.read_text())), indent=2))
+PY
+    )"; then
+        warn "$(tilde "$CLAUDE_SETTINGS") is not valid JSON; leaving it alone"
+        warn "Fix or delete it, then run this again."
+        return 0
+    fi
+
+    if [ -f "$CLAUDE_SETTINGS" ] && [ "$merged" = "$(cat "$CLAUDE_SETTINGS")" ]; then
+        skip "$(tilde "$CLAUDE_SETTINGS") (already applied)"
+        return 0
+    fi
+
+    if [ "$DRY_RUN" -eq 1 ]; then
+        printf '\033[0;90m  would update: %s\033[0m\n' "$(tilde "$CLAUDE_SETTINGS")"
+        return 0
+    fi
+
+    # Copied, not moved: back_up() would take the live settings away with it.
+    if [ -f "$CLAUDE_SETTINGS" ]; then
+        cp "$CLAUDE_SETTINGS" "$CLAUDE_SETTINGS.bak.$STAMP"
+        warn "backed up $(tilde "$CLAUDE_SETTINGS") -> $(tilde "$CLAUDE_SETTINGS").bak.$STAMP"
+    fi
+    mkdir -p "$(dirname "$CLAUDE_SETTINGS")"
+    printf '%s\n' "$merged" > "$CLAUDE_SETTINGS"
+    save "$(tilde "$CLAUDE_SETTINGS")"
+}
+
 # --- args ------------------------------------------------------------------
 
 while [ $# -gt 0 ]; do
@@ -361,7 +434,7 @@ fi
 
 if [ "$do_dotfiles" -eq 1 ]; then install_dotfiles; fi
 if [ "$do_brew" -eq 1 ]; then install_brew; fi
-if [ "$do_skills" -eq 1 ]; then install_skills; fi
+if [ "$do_skills" -eq 1 ]; then install_skills; install_agent_settings; fi
 if [ "$do_terminal" -eq 1 ]; then install_terminal; fi
 
 info "Done"

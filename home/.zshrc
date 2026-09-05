@@ -122,4 +122,9 @@ fi
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-export PATH="$HOME/.local/bin:$PATH"
+# Keep $PATH and the prompt hooks free of duplicates when this file is sourced
+# again — `src` re-runs it in place and `reload` re-execs the shell, and both
+# inherit the environment they started from. -U only dedupes on assignment to
+# the `path` array, so this has to go through `path`, not through `PATH`.
+typeset -U path precmd_functions
+path=("$HOME/.local/bin" $path)

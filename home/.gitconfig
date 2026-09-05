@@ -10,3 +10,9 @@
 
 [pull]
 	rebase = true
+
+# Machine-specific config: work identities, conditional includes, credential
+# helpers. Not committed — create ~/.gitconfig.local by hand on each machine.
+# It is included last, so anything it sets overrides the values above.
+[include]
+	path = ~/.gitconfig.local

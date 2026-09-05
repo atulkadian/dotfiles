@@ -9,9 +9,4 @@
 	defaultBranch = main
 
 [pull]
-	rebase = false
-
-# Machine-specific config: work identities, conditional includes, credential
-# helpers. Not committed. Create ~/.gitconfig.local by hand on each machine.
-[include]
-	path = ~/.gitconfig.local
+	rebase = true

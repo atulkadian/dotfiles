@@ -175,16 +175,18 @@
 	</data>
 	<key>BackgroundSettingsForInactiveWindows</key>
 	<true/>
+	<key>Bell</key>
+	<false/>
 	<key>DynamicANSIForegroundColors</key>
 	<false/>
 	<key>Font</key>
 	<data>
 	YnBsaXN0MDDUAQIDBAUGBwpYJHZlcnNpb25ZJGFyY2hpdmVyVCR0b3BYJG9iamVjdHMS
 	AAGGoF8QD05TS2V5ZWRBcmNoaXZlctEICVRyb290gAGkCwwVFlUkbnVsbNQNDg8QERIT
-	FFZOU1NpemVYTlNmRmxhZ3NWTlNOYW1lViRjbGFzcyNAMAAAAAAAABAQgAKAA18QF1NG
-	TW9ub1Rlcm1pbmFsLVNlbWlib2xk0hcYGRpaJGNsYXNzbmFtZVgkY2xhc3Nlc1ZOU0Zv
-	bnSiGRtYTlNPYmplY3QIERokKTI3SUxRU1heZ253foWOkJKUrrO+x87RAAAAAAAAAQEA
-	AAAAAAAAHAAAAAAAAAAAAAAAAAAAANo=
+	FFZOU1NpemVYTlNmRmxhZ3NWTlNOYW1lViRjbGFzcyNALgAAAAAAABAQgAKAA18QFlNG
+	TW9ub1Rlcm1pbmFsLVJlZ3VsYXLSFxgZGlokY2xhc3NuYW1lWCRjbGFzc2VzVk5TRm9u
+	dKIZG1hOU09iamVjdAgRGiQpMjdJTFFTWF5nbnd+hY6QkpStsr3GzdAAAAAAAAABAQAA
+	AAAAAAAcAAAAAAAAAAAAAAAAAAAA2Q==
 	</data>
 	<key>FontAntialias</key>
 	<true/>
@@ -229,5 +231,7 @@
 	<integer>30</integer>
 	<key>type</key>
 	<string>Window Settings</string>
+	<key>useOptionAsMetaKey</key>
+	<true/>
 </dict>
 </plist>

@@ -23,6 +23,8 @@ The installer finds its own location, so the repo works from any path.
 │   └── terminal/       Terminal.app profiles
 ├── claude/
 │   └── settings.defaults.json   merged into ~/.claude/settings.json
+├── server/
+│   └── arm64/setup.sh  a new Ubuntu arm64 server
 └── skills/             agent skills for Claude Code and Cursor
 ```
 
@@ -97,3 +99,18 @@ A work identity scoped to one directory:
 [includeIf "gitdir:~/projects/abc/"]
 	path = ~/projects/abc/.gitconfig
 ```
+
+## Servers
+
+`server/arm64/setup.sh` readies a fresh Ubuntu arm64 server to run Docker
+services behind host nginx: Docker with log rotation, Nginx, Certbot, the
+Doppler CLI, the timezone, and ports 80 and 443 opened in iptables, which
+some cloud images lock down to SSH. Run it on the server as the default
+user; it uses sudo where it needs to, and is safe to re-run.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/atulkadian/dotfiles/main/server/arm64/setup.sh | bash
+```
+
+The cloud provider's own firewall is set in its console, not on the
+server: allow TCP 80 and 443 there as well.
